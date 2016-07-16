@@ -11,8 +11,8 @@ print "Pokemon Go"
 local_lat = -23.5596626
 local_lng = -46.6836279
 
-target_lat = 37.3861
-target_lng = -122.0839
+target_lat = -35.2809
+target_lng = 149.1300
 
 delta_lat = target_lat - local_lat
 delta_lng = target_lng - local_lng
@@ -176,7 +176,7 @@ requestPatchers = {
 
 responsePatchers = {
     GET_MAP_OBJECTS: (GetMapObjectsOutProto, patchGetMapObjectsResponse),
-    FORT_DETAILS: (GetMapObjectsOutProto, patchFortDetailsResponse),
+    FORT_DETAILS: (FortDetailsOutProto, patchFortDetailsResponse),
     ENCOUNTER: (EncounterOutProto, patchEncounterResponse),
     GET_INCENSE_POKEMON: (GetIncensePokemonOutProto, patchGetIncensePokemonResponse),
     

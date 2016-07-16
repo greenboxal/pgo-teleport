@@ -1,0 +1,71 @@
+
+syntax = "proto3";
+
+package Holoholo.Rpc;
+
+import public "holoholo_shared.proto";
+message MapFieldEntry {
+  Holoholo.Rpc.Method key = 1;
+  bytes value = 2;
+}
+
+enum Direction {
+  UNKNOWN = 0;
+  RESPONSE = 1;
+  REQUEST = 2;
+}
+
+message Thing {
+  bytes start = 1;
+  uint64 timestamp = 2;
+  bytes end = 3;
+}
+
+message RpcRequestEnvelopeProto {
+  message AuthInfo {
+    string provider = 1;
+    JWT token = 2;
+
+    message JWT {
+      string contents = 1;
+    }
+  }
+
+  Direction direction = 1;
+  uint64 request_id = 3;
+
+  repeated MapFieldEntry parameter = 4;
+
+  bytes footer = 6;
+  double lat = 7;
+  double long = 8;
+  double altitude = 9;
+  AuthInfo auth = 10;
+
+  Thing thing = 11;
+
+  int32 unknown12 = 12;
+}
+
+message RpcResponseEnvelopeProto {
+  Direction direction = 1;
+  uint64 response_id = 2;
+  string api_url = 3;
+
+  bytes footer = 6;
+  Unknown7 unknown7 = 7;
+  double lat = 8;
+  double long = 9;
+  double altitude = 10;
+
+  Thing thing = 11;
+
+  int32 unknown12 = 12;
+  repeated bytes returns = 100;
+
+  message Unknown7 {
+	  bytes unknown71 = 1;
+	  int64 unknown72 = 2;
+	  bytes unknown73 = 3;
+  }
+}

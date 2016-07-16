@@ -8,7 +8,7 @@ It's useful for playing Pokemon Go before it is released in your country.
 
 This scripts intercepts all messages between the client and the server and translates all used coordinates.
 
-The server thinks that you're in the target location. The client still behaves like it's in your current location like the pokemons were really spawned in your local area.
+The server thinks that you're in the target location. The client still behaves like it's in your current location as if the pokemons were really spawned in your local area.
 
 ## Usage
 

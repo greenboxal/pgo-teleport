@@ -41,27 +41,50 @@ def translateCellId(id, direction):
 
         print("%s(%s) -> %s(%s)" % (old_pos, id, new_pos, new_cell.id()))
 
-        return new_cell.id()
+        return new_cell
     except:
-        return id
+        print("FUCKING ID", id, direction)
+
+def translateOutgoingCellId(id):
+    cell = translateCellId(id, 1)
+
+    cell_translation[cell.parent(15).id()] = id
+
+    return cell.id()
+
+def translateIncomingCellId(id):
+    return cell_translation.get(id, translateCellId(id, -1).id())
 
 def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat
     r.Lng += delta_lng
 
-cell_hack = {}
+def patchFortSearchRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+    r.FortLatDegrees += delta_lat
+    r.FortLngDegrees += delta_lng
+
+def patchGetGymDetailsRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+    r.FortLatDegrees += delta_lat
+    r.FortLngDegrees += delta_lng
+
+def patchFortDetailsRequest(r):
+    r.Latitude += delta_lat
+    r.Longitude += delta_lng
 
 def patchGetMapObjectsRequest(r):
     for i, id in enumerate(r.CellId):
-        cell_hack[i] = r.CellId[i]
-        r.CellId[i] = translateCellId(id, 1)
+        r.CellId[i] = translateOutgoingCellId(id)
 
     r.PlayerLat += delta_lat
     r.PlayerLng += delta_lng
 
 def patchGetMapObjectsResponse(r):
     for i, c in enumerate(r.MapCell):
-        c.S2CellId = cell_hack.get(i, translateCellId(c.S2CellId, -1))
+        c.S2CellId = translateIncomingCellId(c.S2CellId)
 
         for x in c.Fort:
             x.Latitude -= delta_lat
@@ -72,12 +95,10 @@ def patchGetMapObjectsResponse(r):
             x.Longitude -= delta_lng
 
         for x in c.WildPokemon:
-            x.SpawnPointId = translateCellId(x.SpawnPointId, -1)
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
 
         for x in c.CatchablePokemon:
-            x.SpawnPointId = translateCellId(x.SpawnPointId, -1)
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
 
@@ -88,6 +109,10 @@ def patchGetMapObjectsResponse(r):
         for x in c.DecimatedSpawnPoint:
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
+
+def patchFortDetailsResponse(r):
+    r.Latitude -= delta_lat
+    r.Longitude -= delta_lng
 
 @concurrent
 def request(context, flow):
@@ -106,6 +131,12 @@ def request(context, flow):
                 p.value = patchObject(p.value, GetMapObjectsProto, patchGetMapObjectsRequest)
             elif p.key == PLAYER_UPDATE:
                 p.value = patchObject(p.value, PlayerUpdateProto, patchPlayerUpdateRequest)
+            elif p.key == FORT_SEARCH:
+                p.value = patchObject(p.value, FortSearchProto, patchFortSearchRequest)
+            elif p.key == FORT_DETAILS:
+                p.value = patchObject(p.value, FortDetailsProto, patchFortDetailsRequest)
+            elif p.key == GET_GYM_DETAILS:
+                p.value = patchObject(p.value, GetGymDetailsProto, patchGetGymDetailsRequest)
 
         # Store request for future usage
         request_map[request.request_id] = request
@@ -131,6 +162,8 @@ def response(context, flow):
 
                 if p.key == GET_MAP_OBJECTS:
                     response.returns[i] = patchObject(response.returns[i], GetMapObjectsOutProto, patchGetMapObjectsResponse)
+                elif p.key == FORT_DETAILS:
+                    response.returns[i] = patchObject(response.returns[i], FortDetailsOutProto, patchFortDetailsResponse)
 
         # Serialize new response
         flow.response.content = response.SerializeToString()

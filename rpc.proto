@@ -4,6 +4,8 @@ syntax = "proto3";
 package Holoholo.Rpc;
 
 import public "holoholo_shared.proto";
+import public "remaining.proto";
+
 message MapFieldEntry {
   Holoholo.Rpc.Method key = 1;
   bytes value = 2;

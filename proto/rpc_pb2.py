@@ -15,16 +15,19 @@ _sym_db = _symbol_database.Default()
 
 
 import holoholo_shared_pb2 as holoholo__shared__pb2
+import remaining_pb2 as remaining__pb2
+holoholo__shared__pb2 = remaining__pb2.holoholo__shared__pb2
 
 from holoholo_shared_pb2 import *
+from remaining_pb2 import *
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='rpc.proto',
   package='Holoholo.Rpc',
   syntax='proto3',
-  serialized_pb=_b('\n\trpc.proto\x12\x0cHoloholo.Rpc\x1a\x15holoholo_shared.proto\"A\n\rMapFieldEntry\x12!\n\x03key\x18\x01 \x01(\x0e\x32\x14.Holoholo.Rpc.Method\x12\r\n\x05value\x18\x02 \x01(\x0c\"6\n\x05Thing\x12\r\n\x05start\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x0c\"\xb5\x03\n\x17RpcRequestEnvelopeProto\x12*\n\tdirection\x18\x01 \x01(\x0e\x32\x17.Holoholo.Rpc.Direction\x12\x12\n\nrequest_id\x18\x03 \x01(\x04\x12.\n\tparameter\x18\x04 \x03(\x0b\x32\x1b.Holoholo.Rpc.MapFieldEntry\x12\x0e\n\x06\x66ooter\x18\x06 \x01(\x0c\x12\x0b\n\x03lat\x18\x07 \x01(\x01\x12\x0c\n\x04long\x18\x08 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\t \x01(\x01\x12<\n\x04\x61uth\x18\n \x01(\x0b\x32..Holoholo.Rpc.RpcRequestEnvelopeProto.AuthInfo\x12\"\n\x05thing\x18\x0b \x01(\x0b\x32\x13.Holoholo.Rpc.Thing\x12\x11\n\tunknown12\x18\x0c \x01(\x05\x1ax\n\x08\x41uthInfo\x12\x10\n\x08provider\x18\x01 \x01(\t\x12\x41\n\x05token\x18\x02 \x01(\x0b\x32\x32.Holoholo.Rpc.RpcRequestEnvelopeProto.AuthInfo.JWT\x1a\x17\n\x03JWT\x12\x10\n\x08\x63ontents\x18\x01 \x01(\t\"\xf9\x02\n\x18RpcResponseEnvelopeProto\x12*\n\tdirection\x18\x01 \x01(\x0e\x32\x17.Holoholo.Rpc.Direction\x12\x13\n\x0bresponse_id\x18\x02 \x01(\x04\x12\x0f\n\x07\x61pi_url\x18\x03 \x01(\t\x12\x0e\n\x06\x66ooter\x18\x06 \x01(\x0c\x12\x41\n\x08unknown7\x18\x07 \x01(\x0b\x32/.Holoholo.Rpc.RpcResponseEnvelopeProto.Unknown7\x12\x0b\n\x03lat\x18\x08 \x01(\x01\x12\x0c\n\x04long\x18\t \x01(\x01\x12\x10\n\x08\x61ltitude\x18\n \x01(\x01\x12\"\n\x05thing\x18\x0b \x01(\x0b\x32\x13.Holoholo.Rpc.Thing\x12\x11\n\tunknown12\x18\x0c \x01(\x05\x12\x0f\n\x07returns\x18\x64 \x03(\x0c\x1a\x43\n\x08Unknown7\x12\x11\n\tunknown71\x18\x01 \x01(\x0c\x12\x11\n\tunknown72\x18\x02 \x01(\x03\x12\x11\n\tunknown73\x18\x03 \x01(\x0c*3\n\tDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08RESPONSE\x10\x01\x12\x0b\n\x07REQUEST\x10\x02P\x00\x62\x06proto3')
+  serialized_pb=_b('\n\trpc.proto\x12\x0cHoloholo.Rpc\x1a\x15holoholo_shared.proto\x1a\x0fremaining.proto\"A\n\rMapFieldEntry\x12!\n\x03key\x18\x01 \x01(\x0e\x32\x14.Holoholo.Rpc.Method\x12\r\n\x05value\x18\x02 \x01(\x0c\"6\n\x05Thing\x12\r\n\x05start\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x0c\"\xb5\x03\n\x17RpcRequestEnvelopeProto\x12*\n\tdirection\x18\x01 \x01(\x0e\x32\x17.Holoholo.Rpc.Direction\x12\x12\n\nrequest_id\x18\x03 \x01(\x04\x12.\n\tparameter\x18\x04 \x03(\x0b\x32\x1b.Holoholo.Rpc.MapFieldEntry\x12\x0e\n\x06\x66ooter\x18\x06 \x01(\x0c\x12\x0b\n\x03lat\x18\x07 \x01(\x01\x12\x0c\n\x04long\x18\x08 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\t \x01(\x01\x12<\n\x04\x61uth\x18\n \x01(\x0b\x32..Holoholo.Rpc.RpcRequestEnvelopeProto.AuthInfo\x12\"\n\x05thing\x18\x0b \x01(\x0b\x32\x13.Holoholo.Rpc.Thing\x12\x11\n\tunknown12\x18\x0c \x01(\x05\x1ax\n\x08\x41uthInfo\x12\x10\n\x08provider\x18\x01 \x01(\t\x12\x41\n\x05token\x18\x02 \x01(\x0b\x32\x32.Holoholo.Rpc.RpcRequestEnvelopeProto.AuthInfo.JWT\x1a\x17\n\x03JWT\x12\x10\n\x08\x63ontents\x18\x01 \x01(\t\"\xf9\x02\n\x18RpcResponseEnvelopeProto\x12*\n\tdirection\x18\x01 \x01(\x0e\x32\x17.Holoholo.Rpc.Direction\x12\x13\n\x0bresponse_id\x18\x02 \x01(\x04\x12\x0f\n\x07\x61pi_url\x18\x03 \x01(\t\x12\x0e\n\x06\x66ooter\x18\x06 \x01(\x0c\x12\x41\n\x08unknown7\x18\x07 \x01(\x0b\x32/.Holoholo.Rpc.RpcResponseEnvelopeProto.Unknown7\x12\x0b\n\x03lat\x18\x08 \x01(\x01\x12\x0c\n\x04long\x18\t \x01(\x01\x12\x10\n\x08\x61ltitude\x18\n \x01(\x01\x12\"\n\x05thing\x18\x0b \x01(\x0b\x32\x13.Holoholo.Rpc.Thing\x12\x11\n\tunknown12\x18\x0c \x01(\x05\x12\x0f\n\x07returns\x18\x64 \x03(\x0c\x1a\x43\n\x08Unknown7\x12\x11\n\tunknown71\x18\x01 \x01(\x0c\x12\x11\n\tunknown72\x18\x02 \x01(\x03\x12\x11\n\tunknown73\x18\x03 \x01(\x0c*3\n\tDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08RESPONSE\x10\x01\x12\x0b\n\x07REQUEST\x10\x02P\x00P\x01\x62\x06proto3')
   ,
-  dependencies=[holoholo__shared__pb2.DESCRIPTOR,])
+  dependencies=[holoholo__shared__pb2.DESCRIPTOR,remaining__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _DIRECTION = _descriptor.EnumDescriptor(
@@ -48,8 +51,8 @@ _DIRECTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=993,
-  serialized_end=1044,
+  serialized_start=1010,
+  serialized_end=1061,
 )
 _sym_db.RegisterEnumDescriptor(_DIRECTION)
 
@@ -93,8 +96,8 @@ _MAPFIELDENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=50,
-  serialized_end=115,
+  serialized_start=67,
+  serialized_end=132,
 )
 
 
@@ -138,8 +141,8 @@ _THING = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=117,
-  serialized_end=171,
+  serialized_start=134,
+  serialized_end=188,
 )
 
 
@@ -169,8 +172,8 @@ _RPCREQUESTENVELOPEPROTO_AUTHINFO_JWT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=588,
-  serialized_end=611,
+  serialized_start=605,
+  serialized_end=628,
 )
 
 _RPCREQUESTENVELOPEPROTO_AUTHINFO = _descriptor.Descriptor(
@@ -206,8 +209,8 @@ _RPCREQUESTENVELOPEPROTO_AUTHINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=491,
-  serialized_end=611,
+  serialized_start=508,
+  serialized_end=628,
 )
 
 _RPCREQUESTENVELOPEPROTO = _descriptor.Descriptor(
@@ -299,8 +302,8 @@ _RPCREQUESTENVELOPEPROTO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=174,
-  serialized_end=611,
+  serialized_start=191,
+  serialized_end=628,
 )
 
 
@@ -344,8 +347,8 @@ _RPCRESPONSEENVELOPEPROTO_UNKNOWN7 = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=924,
-  serialized_end=991,
+  serialized_start=941,
+  serialized_end=1008,
 )
 
 _RPCRESPONSEENVELOPEPROTO = _descriptor.Descriptor(
@@ -444,8 +447,8 @@ _RPCRESPONSEENVELOPEPROTO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=614,
-  serialized_end=991,
+  serialized_start=631,
+  serialized_end=1008,
 )
 
 _MAPFIELDENTRY.fields_by_name['key'].enum_type = holoholo__shared__pb2._METHOD

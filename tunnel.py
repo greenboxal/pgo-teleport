@@ -11,8 +11,8 @@ print "Pokemon Go"
 local_lat = -23.5596626
 local_lng = -46.6836279
 
-target_lat = 37.4241
-target_lng = -122.1661
+target_lat = 37.3861
+target_lng = -122.0839
 
 delta_lat = target_lat - local_lat
 delta_lng = target_lng - local_lng
@@ -30,20 +30,15 @@ def patchObject(raw, typ, fn):
     return obj.SerializeToString()
 
 def translateCellId(id, direction):
-    try:
-        delta = LatLng.from_degrees(delta_lat * direction, delta_lng * direction)
+    delta = LatLng.from_degrees(delta_lat * direction, delta_lng * direction)
 
-        old_cell = CellId(id)
-        old_pos = old_cell.to_lat_lng()
+    old_cell = CellId(id)
+    old_pos = old_cell.to_lat_lng()
 
-        new_pos = old_pos + delta
-        new_cell = CellId.from_lat_lng(new_pos)
+    new_pos = old_pos + delta
+    new_cell = CellId.from_lat_lng(new_pos)
 
-        print("%s(%s) -> %s(%s)" % (old_pos, id, new_pos, new_cell.id()))
-
-        return new_cell
-    except:
-        print("FUCKING ID", id, direction)
+    return new_cell
 
 def translateOutgoingCellId(id):
     cell = translateCellId(id, 1)
@@ -55,25 +50,17 @@ def translateOutgoingCellId(id):
 def translateIncomingCellId(id):
     return cell_translation.get(id, translateCellId(id, -1).id())
 
+def patchWildPokemon(p):
+    p.Latitude -= delta_lat
+    p.Longitude -= delta_lng
+
+def patchWildPokemon(p):
+    p.Latitude -= delta_lat
+    p.Longitude -= delta_lng
+
 def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat
     r.Lng += delta_lng
-
-def patchFortSearchRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
-    r.FortLatDegrees += delta_lat
-    r.FortLngDegrees += delta_lng
-
-def patchGetGymDetailsRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
-    r.FortLatDegrees += delta_lat
-    r.FortLngDegrees += delta_lng
-
-def patchFortDetailsRequest(r):
-    r.Latitude += delta_lat
-    r.Longitude += delta_lng
 
 def patchGetMapObjectsRequest(r):
     for i, id in enumerate(r.CellId):
@@ -95,8 +82,7 @@ def patchGetMapObjectsResponse(r):
             x.Longitude -= delta_lng
 
         for x in c.WildPokemon:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patchWildPokemon(x)
 
         for x in c.CatchablePokemon:
             x.Latitude -= delta_lat
@@ -110,9 +96,91 @@ def patchGetMapObjectsResponse(r):
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
 
+def patchFortSearchRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+    r.FortLatDegrees += delta_lat
+    r.FortLngDegrees += delta_lng
+
+def patchGetGymDetailsRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+    r.GymLatDegrees += delta_lat
+    r.GymLngDegrees += delta_lng
+
+def patchEncounterRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchEncounterResponse(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+    patchWildPokemon(r.Pokemon)
+
+def patchGetIncensePokemonRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchGetIncensePokemonResponse(r):
+    r.Lat += delta_lat
+    r.Lng += delta_lng
+
+def patchFortDetailsRequest(r):
+    r.Latitude += delta_lat
+    r.Longitude += delta_lng
+
 def patchFortDetailsResponse(r):
     r.Latitude -= delta_lat
     r.Longitude -= delta_lng
+
+def patchFortDeployRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchFortRecallRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchAddFortModifierRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchTradingSearchRequest(r):
+    r.Lat += delta_lat
+    r.Lng += delta_lng
+
+def patchUseItemGymRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+def patchDiskEncounterRequest(r):
+    r.PlayerLatDegrees += delta_lat
+    r.PlayerLngDegrees += delta_lng
+
+requestPatchers = {
+    GET_MAP_OBJECTS: (GetMapObjectsProto, patchGetMapObjectsRequest),
+    PLAYER_UPDATE: (PlayerUpdateProto, patchPlayerUpdateRequest),
+    FORT_SEARCH: (FortSearchProto, patchFortSearchRequest),
+    FORT_DETAILS: (FortDetailsProto, patchFortDetailsRequest),
+    GET_GYM_DETAILS: (GetGymDetailsProto, patchGetGymDetailsRequest),
+    ENCOUNTER: (EncounterProto, patchEncounterRequest),
+    GET_INCENSE_POKEMON: (GetIncensePokemonProto, patchGetIncensePokemonRequest),
+    FORT_DEPLOY_POKEMON: (FortDeployProto, patchFortDeployRequest),
+    FORT_RECALL_POKEMON: (FortRecallProto, patchFortRecallRequest),
+    ADD_FORT_MODIFIER: (AddFortModifierProto, patchAddFortModifierRequest),
+    TRADE_SEARCH: (TradingSearchProto, patchTradingSearchRequest),
+    USE_ITEM_GYM: (UseItemGymProto, patchUseItemGymRequest),
+    DISK_ENCOUNTER: (DiskEncounterProto, patchDiskEncounterRequest),
+}
+
+responsePatchers = {
+    GET_MAP_OBJECTS: (GetMapObjectsOutProto, patchGetMapObjectsResponse),
+    FORT_DETAILS: (GetMapObjectsOutProto, patchFortDetailsResponse),
+    ENCOUNTER: (EncounterOutProto, patchEncounterResponse),
+    GET_INCENSE_POKEMON: (GetIncensePokemonOutProto, patchGetIncensePokemonResponse),
+    
+}
 
 @concurrent
 def request(context, flow):
@@ -127,16 +195,11 @@ def request(context, flow):
         for p in request.parameter:
             print('--> %s [%s]' % (Method.Name(p.key), request.request_id))
 
-            if p.key == GET_MAP_OBJECTS:
-                p.value = patchObject(p.value, GetMapObjectsProto, patchGetMapObjectsRequest)
-            elif p.key == PLAYER_UPDATE:
-                p.value = patchObject(p.value, PlayerUpdateProto, patchPlayerUpdateRequest)
-            elif p.key == FORT_SEARCH:
-                p.value = patchObject(p.value, FortSearchProto, patchFortSearchRequest)
-            elif p.key == FORT_DETAILS:
-                p.value = patchObject(p.value, FortDetailsProto, patchFortDetailsRequest)
-            elif p.key == GET_GYM_DETAILS:
-                p.value = patchObject(p.value, GetGymDetailsProto, patchGetGymDetailsRequest)
+            patcher = requestPatchers.get(p.key, None)
+
+            if patcher != None:
+                typ, fn = patcher
+                p.value = patchObject(p.value, typ, fn)
 
         # Store request for future usage
         request_map[request.request_id] = request
@@ -150,20 +213,23 @@ def response(context, flow):
         response = RpcResponseEnvelopeProto()
         response.ParseFromString(flow.response.content)
 
-        if response.response_id != 0:
-            # Load previous request dat
-            request = request_map[response.response_id]
-            del request_map[response.response_id]
+        if response.response_id == 0:
+            return
 
-            for i, _ in enumerate(request.parameter):
-                p = request.parameter[i]
+        # Load previous request dat
+        request = request_map[response.response_id]
+        del request_map[response.response_id]
 
-                print('<-- %s [%s]' % (Method.Name(p.key), request.request_id))
+        for i, _ in enumerate(request.parameter):
+            p = request.parameter[i]
 
-                if p.key == GET_MAP_OBJECTS:
-                    response.returns[i] = patchObject(response.returns[i], GetMapObjectsOutProto, patchGetMapObjectsResponse)
-                elif p.key == FORT_DETAILS:
-                    response.returns[i] = patchObject(response.returns[i], FortDetailsOutProto, patchFortDetailsResponse)
+            print('<-- %s [%s]' % (Method.Name(p.key), request.request_id))
+
+            patcher = responsePatchers.get(p.key,  None)
+
+            if patcher != None:
+                typ, fn = patcher
+                response.returns[i] = patchObject(response.returns[i], typ, fn)
 
         # Serialize new response
         flow.response.content = response.SerializeToString()

@@ -49,16 +49,19 @@ def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat
     r.Lng += delta_lng
 
+cell_hack = {}
+
 def patchGetMapObjectsRequest(r):
     for i, id in enumerate(r.CellId):
+        cell_hack[i] = r.CellId[i]
         r.CellId[i] = translateCellId(id, 1)
 
     r.PlayerLat += delta_lat
     r.PlayerLng += delta_lng
 
 def patchGetMapObjectsResponse(r):
-    for c in r.MapCell:
-        c.S2CellId = translateCellId(c.S2CellId, -1)
+    for i, c in enumerate(r.MapCell):
+        c.S2CellId = cell_hack.get(i, translateCellId(c.S2CellId, -1))
 
         for x in c.Fort:
             x.Latitude -= delta_lat
@@ -96,9 +99,8 @@ def request(context, flow):
         request.lat += delta_lat
         request.long += delta_lng
 
-
         for p in request.parameter:
-            print('--> ' + Method.Name(p.key))
+            print('--> %s [%s]' % (Method.Name(p.key), request.request_id))
 
             if p.key == GET_MAP_OBJECTS:
                 p.value = patchObject(p.value, GetMapObjectsProto, patchGetMapObjectsRequest)
@@ -125,7 +127,7 @@ def response(context, flow):
             for i, _ in enumerate(request.parameter):
                 p = request.parameter[i]
 
-                print('<-- ' + Method.Name(p.key))
+                print('<-- %s [%s]' % (Method.Name(p.key), request.request_id))
 
                 if p.key == GET_MAP_OBJECTS:
                     response.returns[i] = patchObject(response.returns[i], GetMapObjectsOutProto, patchGetMapObjectsResponse)

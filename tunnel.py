@@ -1,6 +1,6 @@
 import sys
 
-from s2 import *
+from s2sphere import *
 from proto.rpc_pb2  import *
 
 from mitmproxy.models import decoded
@@ -8,13 +8,17 @@ from mitmproxy.script import concurrent
 
 print "Pokemon Go"
 
-delta_lat = 40.730610 - (-23.533773)
-delta_lng = (-73.935242) - (-46.625290)
+local_lat = -23.5596626
+local_lng = -46.6836279
 
-#10722604078531084288
+target_lat = 37.4241
+target_lng = -122.1661
+
+delta_lat = target_lat - local_lat
+delta_lng = target_lng - local_lng
 
 request_map = {}
-translation_map = {}
+cell_translation = {}
 
 def patchObject(raw, typ, fn):
     obj = typ()
@@ -26,23 +30,24 @@ def patchObject(raw, typ, fn):
     return obj.SerializeToString()
 
 def translateCellId(id, direction):
-	old_cell = S2CellId(id)
-	old_pos = old_cell.ToLatLng()
+    try:
+        delta = LatLng.from_degrees(delta_lat * direction, delta_lng * direction)
 
-	old_lat = old_pos.lat().degrees()
-	old_lng = old_pos.lng().degrees()
+        old_cell = CellId(id)
+        old_pos = old_cell.to_lat_lng()
 
-	new_lat = old_lat + delta_lat * direction
-	new_lng = old_lng + delta_lng * direction
+        new_pos = old_pos + delta
+        new_cell = CellId.from_lat_lng(new_pos)
 
-	print(old_lat, old_lng, new_lat, new_lng)
+        print("%s(%s) -> %s(%s)" % (old_pos, id, new_pos, new_cell.id()))
 
-	new_pos = S2LatLng_FromDegrees(new_lat, new_lng)
-	new_cell = S2CellId_FromLatLng(new_pos).parent(old_cell.level())
+        return new_cell.id()
+    except:
+        return id
 
-	translation_map[new_cell.id()] = id
-
-	return new_cell.id()
+def patchPlayerUpdateRequest(r):
+    r.Lat += delta_lat
+    r.Lng += delta_lng
 
 def patchGetMapObjectsRequest(r):
     for i, id in enumerate(r.CellId):
@@ -53,8 +58,8 @@ def patchGetMapObjectsRequest(r):
 
 def patchGetMapObjectsResponse(r):
     for c in r.MapCell:
-        c.S2CellId = translation_map[c.S2CellId]
-        
+        c.S2CellId = translateCellId(c.S2CellId, -1)
+
         for x in c.Fort:
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
@@ -64,14 +69,12 @@ def patchGetMapObjectsResponse(r):
             x.Longitude -= delta_lng
 
         for x in c.WildPokemon:
+            x.SpawnPointId = translateCellId(x.SpawnPointId, -1)
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
 
         for x in c.CatchablePokemon:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
-
-        for x in c.NearbyPokemon:
+            x.SpawnPointId = translateCellId(x.SpawnPointId, -1)
             x.Latitude -= delta_lat
             x.Longitude -= delta_lng
 
@@ -93,11 +96,14 @@ def request(context, flow):
         request.lat += delta_lat
         request.long += delta_lng
 
+
         for p in request.parameter:
-            print('<-- ' + Method.Name(p.key))
+            print('--> ' + Method.Name(p.key))
 
             if p.key == GET_MAP_OBJECTS:
                 p.value = patchObject(p.value, GetMapObjectsProto, patchGetMapObjectsRequest)
+            elif p.key == PLAYER_UPDATE:
+                p.value = patchObject(p.value, PlayerUpdateProto, patchPlayerUpdateRequest)
 
         # Store request for future usage
         request_map[request.request_id] = request
@@ -111,22 +117,18 @@ def response(context, flow):
         response = RpcResponseEnvelopeProto()
         response.ParseFromString(flow.response.content)
 
-        # Patch current location
-        response.lat -= delta_lat
-        response.long -= delta_lng
-
         if response.response_id != 0:
-			# Load previous request dat
-			request = request_map[response.response_id]
-			del request_map[response.response_id]
+            # Load previous request dat
+            request = request_map[response.response_id]
+            del request_map[response.response_id]
 
-			for i, _ in enumerate(request.parameter):
-				p = request.parameter[i]
+            for i, _ in enumerate(request.parameter):
+                p = request.parameter[i]
 
-				print('--> ' + Method.Name(p.key))
+                print('<-- ' + Method.Name(p.key))
 
-				if p.key == GET_MAP_OBJECTS:
-					response.returns[i] = patchObject(response.returns[i], GetMapObjectsOutProto, patchGetMapObjectsResponse)
+                if p.key == GET_MAP_OBJECTS:
+                    response.returns[i] = patchObject(response.returns[i], GetMapObjectsOutProto, patchGetMapObjectsResponse)
 
         # Serialize new response
         flow.response.content = response.SerializeToString()

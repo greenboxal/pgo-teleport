@@ -180,6 +180,10 @@ responsePatchers = {
 }
 
 @concurrent
+def serverconnect(context, server_conn):
+    server_conn.address = ('pgorelease.nianticlabs.com', 443)
+
+@concurrent
 def request(context, flow):
     if flow.match("~d pgorelease.nianticlabs.com"):
         request = RpcRequestEnvelopeProto()

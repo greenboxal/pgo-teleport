@@ -50,13 +50,9 @@ def translateOutgoingCellId(id):
 def translateIncomingCellId(id):
     return cell_translation.get(id, translateCellId(id, -1).id())
 
-def patchWildPokemon(p):
-    p.Latitude -= delta_lat
-    p.Longitude -= delta_lng
-
-def patchWildPokemon(p):
-    p.Latitude -= delta_lat
-    p.Longitude -= delta_lng
+def patchWildPokemon(p, direction):
+    p.Latitude = delta_lat * direction
+    p.Longitude = delta_lng * direction
 
 def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat
@@ -82,7 +78,7 @@ def patchGetMapObjectsResponse(r):
             x.Longitude -= delta_lng
 
         for x in c.WildPokemon:
-            patchWildPokemon(x)
+            patchWildPokemon(x, -1)
 
         for x in c.CatchablePokemon:
             x.Latitude -= delta_lat
@@ -113,15 +109,15 @@ def patchEncounterRequest(r):
     r.PlayerLngDegrees += delta_lng
 
 def patchEncounterResponse(r):
-    patchWildPokemon(r.Pokemon)
+    patchWildPokemon(r.Pokemon, -1)
 
 def patchGetIncensePokemonRequest(r):
     r.PlayerLatDegrees += delta_lat
     r.PlayerLngDegrees += delta_lng
 
 def patchGetIncensePokemonResponse(r):
-    r.Lat += delta_lat
-    r.Lng += delta_lng
+    r.Lat -= delta_lat
+    r.Lng -= delta_lng
 
 def patchFortDetailsRequest(r):
     r.Latitude += delta_lat

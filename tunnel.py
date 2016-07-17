@@ -51,12 +51,12 @@ def translateIncomingCellId(id):
     return cell_translation.get(id, translateCellId(id, -1).id())
 
 def patchWildPokemon(p, direction):
-    p.Latitude = delta_lat * direction
-    p.Longitude = delta_lng * direction
+    p.Latitude += delta_lat * direction
+    p.Longitude += delta_lng * direction
 
 def patchFort(p, direction):
-    p.Latitude = delta_lat * direction
-    p.Longitude = delta_lng * direction
+    p.Latitude += delta_lat * direction
+    p.Longitude += delta_lng * direction
 
 def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat

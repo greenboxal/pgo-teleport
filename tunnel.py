@@ -54,9 +54,20 @@ def patchWildPokemon(p, direction):
     p.Latitude = delta_lat * direction
     p.Longitude = delta_lng * direction
 
+def patchFort(p, direction):
+    p.Latitude = delta_lat * direction
+    p.Longitude = delta_lng * direction
+
 def patchPlayerUpdateRequest(r):
     r.Lat += delta_lat
     r.Lng += delta_lng
+
+def patchPlayerUpdateResponse(r):
+    for p in r.WildPokemon:
+        patchWildPokemon(p, -1)
+
+    for p in r.Fort:
+        patchFort(p, -1)
 
 def patchGetMapObjectsRequest(r):
     for i, id in enumerate(r.CellId):
@@ -70,8 +81,7 @@ def patchGetMapObjectsResponse(r):
         c.S2CellId = translateIncomingCellId(c.S2CellId)
 
         for x in c.Fort:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patchFort(x, -1)
 
         for x in c.FortSummary:
             x.Latitude -= delta_lat
@@ -168,6 +178,7 @@ requestPatchers = {
 }
 
 responsePatchers = {
+    PLAYER_UPDATE: (PlayerUpdateOutProto, patchPlayerUpdateResponse),
     GET_MAP_OBJECTS: (GetMapObjectsOutProto, patchGetMapObjectsResponse),
     FORT_DETAILS: (FortDetailsOutProto, patchFortDetailsResponse),
     ENCOUNTER: (EncounterOutProto, patchEncounterResponse),

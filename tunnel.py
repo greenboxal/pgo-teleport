@@ -119,7 +119,12 @@ def patchEncounterRequest(r):
     r.PlayerLngDegrees += delta_lng
 
 def patchEncounterResponse(r):
-    patchWildPokemon(r.Pokemon, -1)
+    if r.HasField('Pokemon'):
+        patchWildPokemon(r.Pokemon, -1)
+
+def patchIncenseEncounterResponse(r):
+    if r.HasField('Pokemon'):
+        patchWildPokemon(r.Pokemon, -1)
 
 def patchGetIncensePokemonRequest(r):
     r.PlayerLatDegrees += delta_lat
@@ -182,6 +187,7 @@ responsePatchers = {
     GET_MAP_OBJECTS: (GetMapObjectsOutProto, patchGetMapObjectsResponse),
     FORT_DETAILS: (FortDetailsOutProto, patchFortDetailsResponse),
     ENCOUNTER: (EncounterOutProto, patchEncounterResponse),
+    INCENSE_ENCOUNTER: (IncenseEncounterOutProto, patchIncenseEncounterResponse),
     GET_INCENSE_POKEMON: (GetIncensePokemonOutProto, patchGetIncensePokemonResponse),
     
 }

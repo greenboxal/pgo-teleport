@@ -113,9 +113,6 @@ def patchEncounterRequest(r):
     r.PlayerLngDegrees += delta_lng
 
 def patchEncounterResponse(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
-
     patchWildPokemon(r.Pokemon)
 
 def patchGetIncensePokemonRequest(r):

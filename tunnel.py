@@ -23,7 +23,7 @@ cell_translation = ExpiringDict(max_len=999999999,max_age_seconds=20)
 
 def get_delta_for_request(lat, lng):
     pos = LatLng.from_degrees(lat, lng)
-    cell = CellId.from_lat_lng(pos).parent(7)
+    cell = CellId.from_lat_lng(pos).parent(10)
     id = cell.pos() >> 1
     index = id % len(locations)
 
@@ -51,7 +51,8 @@ def patch_object(req, raw, typ, fn):
     return obj.SerializeToString()
 
 def translate_cell_id(req, id, direction):
-    delta_lat, delta_lng = get_delta_for_request(req)
+    delta_lat = req['delta_lat']
+    delta_lng = req['delta_lng']
 
     delta = LatLng.from_degrees(delta_lat * direction, delta_lng * direction)
 

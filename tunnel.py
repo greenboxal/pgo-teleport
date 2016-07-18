@@ -172,7 +172,7 @@ requestPatchers = {
     FORT_SEARCH: (FortSearchProto, patchFortSearchRequest),
     FORT_DETAILS: (FortDetailsProto, patchFortDetailsRequest),
     GET_GYM_DETAILS: (GetGymDetailsProto, patchGetGymDetailsRequest),
-    ENCOUNTER: (EncounterProto, patchEncounterRequest),
+    #ENCOUNTER: (EncounterProto, patchEncounterRequest),
     GET_INCENSE_POKEMON: (GetIncensePokemonProto, patchGetIncensePokemonRequest),
     FORT_DEPLOY_POKEMON: (FortDeployProto, patchFortDeployRequest),
     FORT_RECALL_POKEMON: (FortRecallProto, patchFortRecallRequest),

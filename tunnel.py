@@ -3,33 +3,56 @@ import sys
 from s2sphere import *
 from proto.rpc_pb2  import *
 
+from expiringdict import ExpiringDict
 from mitmproxy.models import decoded
 from mitmproxy.script import concurrent
 
 print "Pokemon Go"
 
-local_lat = -23.5596626
-local_lng = -46.6836279
+locations = [
+        (40.7829, -73.9654), # Central Park
+        (-33.8688, 151.2093), # Sydney
+        (37.4241, -122.1661), # Stanford
+        (38.9072, -77.0369), # Washington DC
+        (51.5074, -0.1278), # London
+        (38.7223, -9.1393), # Lisbon
+]
 
-target_lat = -35.2809
-target_lng = 149.1300
+request_map = ExpiringDict(max_len=999999999,max_age_seconds=20)
+cell_translation = ExpiringDict(max_len=999999999,max_age_seconds=20)
 
-delta_lat = target_lat - local_lat
-delta_lng = target_lng - local_lng
+def get_delta_for_request(lat, lng):
+    pos = LatLng.from_degrees(lat, lng)
+    cell = CellId.from_lat_lng(pos).parent(7)
+    id = cell.pos() >> 1
+    index = id % len(locations)
 
-request_map = {}
-cell_translation = {}
+    local = cell.to_lat_lng()
+    local_lat = local.lat().degrees
+    local_lng = local.lng().degrees
 
-def patchObject(raw, typ, fn):
+    target_lat, target_lng = locations[index]
+
+    delta_lat = target_lat - local_lat
+    delta_lng = target_lng - local_lng
+
+    return (delta_lat, delta_lng)
+
+def patch_coordinates(req, obj, lat_key, lng_key, direction):
+    setattr(obj, lat_key, getattr(obj, lat_key) + req['delta_lat'] * direction)
+    setattr(obj, lng_key, getattr(obj, lng_key) + req['delta_lng'] * direction)
+
+def patch_object(req, raw, typ, fn):
     obj = typ()
     obj.ParseFromString(raw)
 
-    fn(obj)
-    print(obj)
+    fn(req, obj)
 
     return obj.SerializeToString()
 
-def translateCellId(id, direction):
+def translate_cell_id(req, id, direction):
+    delta_lat, delta_lng = get_delta_for_request(req)
+
     delta = LatLng.from_degrees(delta_lat * direction, delta_lng * direction)
 
     old_cell = CellId(id)
@@ -40,131 +63,108 @@ def translateCellId(id, direction):
 
     return new_cell
 
-def translateOutgoingCellId(id):
-    cell = translateCellId(id, 1)
+def translate_outgoing_cell_id(req, id):
+    cell = translate_cell_id(req, id, 1)
 
     cell_translation[cell.parent(15).id()] = id
 
     return cell.id()
 
-def translateIncomingCellId(id):
-    return cell_translation.get(id, translateCellId(id, -1).id())
+def translate_incoming_cell_id(req, id):
+    return cell_translation.get(id, translate_cell_id(req, id, -1).id())
 
-def patchWildPokemon(p, direction):
-    p.Latitude += delta_lat * direction
-    p.Longitude += delta_lng * direction
+def patchWildPokemon(req, p, direction):
+    patch_coordinates(req, p, 'Latitude', 'Longitude', direction)
 
-def patchFort(p, direction):
-    p.Latitude += delta_lat * direction
-    p.Longitude += delta_lng * direction
+def patchFort(req, p, direction):
+    patch_coordinates(req, p, 'Latitude', 'Longitude', direction)
 
-def patchPlayerUpdateRequest(r):
-    r.Lat += delta_lat
-    r.Lng += delta_lng
+def patchPlayerUpdateRequest(req, r):
+    patch_coordinates(req, r, 'Lat', 'Lng', 1)
 
-def patchPlayerUpdateResponse(r):
+def patchPlayerUpdateResponse(req, r):
     for p in r.WildPokemon:
-        patchWildPokemon(p, -1)
+        patchWildPokemon(req, p, -1)
 
     for p in r.Fort:
-        patchFort(p, -1)
+        patchFort(req, p, -1)
 
-def patchGetMapObjectsRequest(r):
+def patchGetMapObjectsRequest(req, r):
     for i, id in enumerate(r.CellId):
-        r.CellId[i] = translateOutgoingCellId(id)
+        r.CellId[i] = translate_outgoing_cell_id(req, id)
 
-    r.PlayerLat += delta_lat
-    r.PlayerLng += delta_lng
+    patch_coordinates(req, r, 'PlayerLat', 'PlayerLng', 1)
 
-def patchGetMapObjectsResponse(r):
+def patchGetMapObjectsResponse(req, r):
     for i, c in enumerate(r.MapCell):
-        c.S2CellId = translateIncomingCellId(c.S2CellId)
+        c.S2CellId = translate_incoming_cell_id(req, c.S2CellId)
 
         for x in c.Fort:
-            patchFort(x, -1)
+            patchFort(req, x, -1)
 
         for x in c.FortSummary:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patch_coordinates(req, x, 'Latitude', 'Longitude', -1)
 
         for x in c.WildPokemon:
-            patchWildPokemon(x, -1)
+            patchWildPokemon(req, x, -1)
 
         for x in c.CatchablePokemon:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patch_coordinates(req, x, 'Latitude', 'Longitude', -1)
 
         for x in c.SpawnPoint:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patch_coordinates(req, x, 'Latitude', 'Longitude', -1)
 
         for x in c.DecimatedSpawnPoint:
-            x.Latitude -= delta_lat
-            x.Longitude -= delta_lng
+            patch_coordinates(req, x, 'Latitude', 'Longitude', -1)
 
-def patchFortSearchRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
-    r.FortLatDegrees += delta_lat
-    r.FortLngDegrees += delta_lng
+def patchFortSearchRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
+    patch_coordinates(req, r, 'FortLatDegrees', 'FortLngDegrees', 1)
 
-def patchGetGymDetailsRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
-    r.GymLatDegrees += delta_lat
-    r.GymLngDegrees += delta_lng
+def patchGetGymDetailsRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
+    patch_coordinates(req, r, 'GymLatDegrees', 'GymLngDegrees', 1)
 
-def patchEncounterRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+def patchEncounterRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
-def patchEncounterResponse(r):
+def patchEncounterResponse(req, r):
     if r.HasField('Pokemon'):
-        patchWildPokemon(r.Pokemon, -1)
+        patchWildPokemon(req, r.Pokemon, -1)
 
-def patchIncenseEncounterResponse(r):
+def patchIncenseEncounterResponse(req, r):
     if r.HasField('Pokemon'):
-        patchWildPokemon(r.Pokemon, -1)
+        patchWildPokemon(req, r.Pokemon, -1)
 
-def patchGetIncensePokemonRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+def patchGetIncensePokemonRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
-def patchGetIncensePokemonResponse(r):
-    r.Lat -= delta_lat
-    r.Lng -= delta_lng
+def patchGetIncensePokemonResponse(req, r):
+    patch_coordinates(req, r, 'Lat', 'Lng', -1)
 
-def patchFortDetailsRequest(r):
-    r.Latitude += delta_lat
-    r.Longitude += delta_lng
+def patchFortDetailsRequest(req, r):
+    patch_coordinates(req, r, 'Latitude', 'Longitude', 1)
 
-def patchFortDetailsResponse(r):
-    r.Latitude -= delta_lat
-    r.Longitude -= delta_lng
+def patchFortDetailsResponse(req, r):
+    patch_coordinates(req, r, 'Latitude', 'Longitude', -1)
 
-def patchFortDeployRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+def patchFortDeployRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
-def patchFortRecallRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+def patchFortRecallRequest(erq, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
-def patchAddFortModifierRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+def patchAddFortModifierRequest(req, r):
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
 def patchTradingSearchRequest(r):
-    r.Lat += delta_lat
-    r.Lng += delta_lng
+    patch_coordinates(req, r, 'Lat', 'Lng', 1)
 
 def patchUseItemGymRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
 def patchDiskEncounterRequest(r):
-    r.PlayerLatDegrees += delta_lat
-    r.PlayerLngDegrees += delta_lng
+    patch_coordinates(req, r, 'PlayerLatDegrees', 'PlayerLngDegrees', 1)
 
 requestPatchers = {
     GET_MAP_OBJECTS: (GetMapObjectsProto, patchGetMapObjectsRequest),
@@ -202,9 +202,20 @@ def request(context, flow):
         request = RpcRequestEnvelopeProto()
         request.ParseFromString(flow.request.content)
 
+        print('lol')
+
+        delta_lat, delta_lng = get_delta_for_request(request.lat, request.long)
+
+        # Create request metadata
+        meta = {
+            'delta_lat': delta_lat,
+            'delta_lng': delta_lng
+        }
+
         # Patch current location
-        request.lat += delta_lat
-        request.long += delta_lng
+        patch_coordinates(meta, request, 'lat', 'long', 1)
+
+        print(meta, request.lat, request.long)
 
         for p in request.parameter:
             print('--> %s [%s]' % (Method.Name(p.key), request.request_id))
@@ -213,10 +224,10 @@ def request(context, flow):
 
             if patcher != None:
                 typ, fn = patcher
-                p.value = patchObject(p.value, typ, fn)
+                p.value = patch_object(meta, p.value, typ, fn)
 
         # Store request for future usage
-        request_map[request.request_id] = request
+        request_map[request.request_id] = (meta, request)
 
         # Serialize new request
         flow.request.content = request.SerializeToString()
@@ -231,7 +242,7 @@ def response(context, flow):
             return
 
         # Load previous request dat
-        request = request_map[response.response_id]
+        meta, request = request_map[response.response_id]
         del request_map[response.response_id]
 
         for i, _ in enumerate(request.parameter):
@@ -243,7 +254,7 @@ def response(context, flow):
 
             if patcher != None:
                 typ, fn = patcher
-                response.returns[i] = patchObject(response.returns[i], typ, fn)
+                response.returns[i] = patch_object(meta, response.returns[i], typ, fn)
 
         # Serialize new response
         flow.response.content = response.SerializeToString()

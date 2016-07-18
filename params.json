@@ -1,6 +1,6 @@
 {
   "name": "PokémonGo Teleport",
   "tagline": "",
-  "body": "Read the full story here:\r\n\r\nUp-to-date VPN details:\r\n```\r\nProtocol: L2TP/IPSec\r\nAddress: 52.206.46.197\r\nPSK: pokemongo\r\nUsername: pokemongo\r\nPassword: pokemongo\r\nStatic routes (if needed): 192.168.7.0/24\r\nDNS server (if needed): 192.168.7.1\r\n```",
+  "body": "Read the full story here: https://medium.com/@gboxmuchacho/playing-pokemon-go-anywhere-162206fd0c91\r\n\r\n## Up-to-date VPN details\r\n```\r\nProtocol: L2TP/IPSec\r\nAddress: pgo-vpn.greenboxal.com\r\nIPSec Pre Shared Key: pokemongo\r\nUsername: pokemongo\r\nPassword: pokemongo\r\nStatic routes (if needed): 10.66.0.0/14\r\nDNS server (if needed): 10.66.0.1\r\nRedirect all traffic: NO\r\n```",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }

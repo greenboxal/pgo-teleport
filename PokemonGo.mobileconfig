@@ -82,7 +82,7 @@
 				<key>AuthPassword</key>
 				<string>pokemongo</string>
 				<key>CommRemoteAddress</key>
-				<string>52.206.46.197</string>
+				<string>pgo-vpn.greenboxal.com</string>
 			</dict>
 			<key>PayloadDescription</key>
 			<string>Configures VPN settings</string>
